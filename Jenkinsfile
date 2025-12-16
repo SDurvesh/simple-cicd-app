@@ -5,6 +5,10 @@ pipeline {
         VENV_DIR = "venv"
     }
 
+    tools {
+        sonarScanner 'sonar-scanner'
+    }
+
     stages {
 
         stage('Checkout') {
@@ -37,7 +41,7 @@ pipeline {
             steps {
                 withSonarQubeEnv('sonarqube') {
                     sh '''
-                        sonar-scanner \
+                        ${SONAR_SCANNER_HOME}/bin/sonar-scanner \
                           -Dsonar.projectKey=simple-cicd-app \
                           -Dsonar.projectName=simple-cicd-app \
                           -Dsonar.sources=app \
