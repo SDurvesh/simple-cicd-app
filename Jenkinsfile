@@ -13,13 +13,13 @@ pipeline {
             }
         }
 
-        stage('Setup Python Environment') {
+        stage('Setup Python Env') {
             steps {
                 sh '''
                     python3 -m venv venv
                     venv/bin/python -m pip install --upgrade pip
-                    venv/bin/python -m pip install -r requirements.txt
-                    venv/bin/python -m pip install -e .
+                    venv/bin/pip install -r requirements.txt
+                    venv/bin/pip install -e .
                 '''
             }
         }
@@ -27,7 +27,7 @@ pipeline {
         stage('Run Tests') {
             steps {
                 sh '''
-                    venv/bin/python -m pytest
+                    venv/bin/pytest
                 '''
             }
         }
@@ -39,11 +39,17 @@ pipeline {
                         ${SONAR_SCANNER_HOME}/bin/sonar-scanner \
                         -Dsonar.projectKey=simple-cicd-app \
                         -Dsonar.projectName=simple-cicd-app \
-                        -Dsonar.projectVersion=1.0 \
                         -Dsonar.sources=app \
-                        -Dsonar.tests=tests \
                         -Dsonar.python.version=3.10
                     '''
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 2, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
@@ -51,10 +57,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ CI + SAST pipeline succeeded'
+            echo '✅ CI + SAST + Quality Gate PASSED'
         }
         failure {
-            echo '❌ CI or SAST failed'
+            echo '❌ Quality Gate FAILED — Fix security issues'
         }
     }
 }
