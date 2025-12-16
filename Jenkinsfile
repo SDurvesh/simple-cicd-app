@@ -12,11 +12,13 @@ pipeline {
         stage('Setup Python Environment') {
             steps {
                 sh '''
+                    rm -rf venv
+
                     python3 -m venv venv
-                    venv/bin/python -m ensurepip --upgrade
-                    venv/bin/python -m pip install --upgrade "pip<24.1"
-                    venv/bin/python -m pip install -r requirements.txt
-                    venv/bin/python -m pip install -e .
+
+                    venv/bin/python -m pip install --no-cache-dir pip==23.2.1
+                    venv/bin/python -m pip install --no-cache-dir -r requirements.txt
+                    venv/bin/python -m pip install --no-cache-dir -e .
                 '''
             }
         }
