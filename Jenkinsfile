@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        SONAR_SCANNER_HOME = tool 'sonar-scanner'
+        SONARQUBE_ENV = 'SonarQube'   // Jenkins → Manage Jenkins → Configure System
     }
 
     stages {
@@ -13,11 +13,15 @@ pipeline {
             }
         }
 
-        stage('Setup Python Env') {
+        stage('Setup Python Environment') {
             steps {
                 sh '''
                     python3 -m venv venv
-                    venv/bin/python -m pip install --upgrade pip
+
+                    # FIX: ensure stable pip (avoid pip 25.x crash)
+                    venv/bin/python -m ensurepip --upgrade
+                    venv/bin/python -m pip install "pip<24.1"
+
                     venv/bin/pip install -r requirements.txt
                     venv/bin/pip install -e .
                 '''
@@ -34,13 +38,16 @@ pipeline {
 
         stage('SonarQube SAST Scan') {
             steps {
-                withSonarQubeEnv('sonarqube') {
+                withSonarQubeEnv("${SONARQUBE_ENV}") {
                     sh '''
-                        ${SONAR_SCANNER_HOME}/bin/sonar-scanner \
-                        -Dsonar.projectKey=simple-cicd-app \
-                        -Dsonar.projectName=simple-cicd-app \
-                        -Dsonar.sources=app \
-                        -Dsonar.python.version=3.10
+                        sonar-scanner \
+                          -Dsonar.projectKey=simple-cicd-app \
+                          -Dsonar.projectName=simple-cicd-app \
+                          -Dsonar.projectVersion=1.0 \
+                          -Dsonar.sources=app \
+                          -Dsonar.tests=tests \
+                          -Dsonar.python.version=3.10 \
+                          -Dsonar.sourceEncoding=UTF-8
                     '''
                 }
             }
@@ -48,7 +55,7 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 2, unit: 'MINUTES') {
+                timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
@@ -60,7 +67,7 @@ pipeline {
             echo '✅ CI + SAST + Quality Gate PASSED'
         }
         failure {
-            echo '❌ Quality Gate FAILED — Fix security issues'
+            echo '❌ CI or Quality Gate FAILED — fix issues before merge'
         }
     }
 }
