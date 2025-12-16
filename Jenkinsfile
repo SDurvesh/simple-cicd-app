@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        SONARQUBE_ENV = 'SonarQube'   // Jenkins → Manage Jenkins → Configure System
+        SONARQUBE_ENV = 'SonarQube'
     }
 
     stages {
@@ -18,12 +18,12 @@ pipeline {
                 sh '''
                     python3 -m venv venv
 
-                    # FIX: ensure stable pip (avoid pip 25.x crash)
+                    # Always use python -m pip (never pip directly)
                     venv/bin/python -m ensurepip --upgrade
-                    venv/bin/python -m pip install "pip<24.1"
+                    venv/bin/python -m pip install --upgrade "pip<24.1"
 
-                    venv/bin/pip install -r requirements.txt
-                    venv/bin/pip install -e .
+                    venv/bin/python -m pip install -r requirements.txt
+                    venv/bin/python -m pip install -e .
                 '''
             }
         }
@@ -31,7 +31,7 @@ pipeline {
         stage('Run Tests') {
             steps {
                 sh '''
-                    venv/bin/pytest
+                    venv/bin/python -m pytest
                 '''
             }
         }
