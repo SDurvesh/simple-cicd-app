@@ -1,12 +1,6 @@
 pipeline {
     agent any
 
-    tools {
-        // This MUST match the name under:
-        // Manage Jenkins → System → SonarQube Scanner installations
-        sonarScanner 'sonar-scanner'
-    }
-
     environment {
         VENV = 'venv'
     }
@@ -41,9 +35,9 @@ pipeline {
 
         stage('SonarQube SAST Scan') {
             steps {
-                // MUST match SonarQube server name in Jenkins config
                 withSonarQubeEnv('sonarqube') {
                     sh '''
+                        echo "Using sonar-scanner from Jenkins-managed tool"
                         sonar-scanner \
                           -Dsonar.projectKey=simple-cicd-app \
                           -Dsonar.projectName=simple-cicd-app \
