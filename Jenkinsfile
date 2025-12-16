@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    environment {
+        SONAR_SCANNER_HOME = tool 'sonar-scanner'
+    }
+
     stages {
 
         stage('Checkout') {
@@ -12,13 +16,10 @@ pipeline {
         stage('Setup Python Environment') {
             steps {
                 sh '''
-                    rm -rf venv
-
                     python3 -m venv venv
-
-                    venv/bin/python -m pip install --no-cache-dir pip==23.2.1
-                    venv/bin/python -m pip install --no-cache-dir -r requirements.txt
-                    venv/bin/python -m pip install --no-cache-dir -e .
+                    venv/bin/python -m pip install --upgrade pip
+                    venv/bin/python -m pip install -r requirements.txt
+                    venv/bin/python -m pip install -e .
                 '''
             }
         }
@@ -30,14 +31,30 @@ pipeline {
                 '''
             }
         }
+
+        stage('SonarQube SAST Scan') {
+            steps {
+                withSonarQubeEnv('sonarqube') {
+                    sh '''
+                        ${SONAR_SCANNER_HOME}/bin/sonar-scanner \
+                        -Dsonar.projectKey=simple-cicd-app \
+                        -Dsonar.projectName=simple-cicd-app \
+                        -Dsonar.projectVersion=1.0 \
+                        -Dsonar.sources=app \
+                        -Dsonar.tests=tests \
+                        -Dsonar.python.version=3.10
+                    '''
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo '✅ CI Pipeline completed successfully'
+            echo '✅ CI + SAST pipeline succeeded'
         }
         failure {
-            echo '❌ CI Pipeline failed'
+            echo '❌ CI or SAST failed'
         }
     }
 }
