@@ -35,17 +35,25 @@ pipeline {
 
         stage('SonarQube SAST Scan') {
             steps {
-                withSonarQubeEnv('sonarqube') {
-                    sh '''
-                        echo "Using sonar-scanner from Jenkins-managed tool"
-                        sonar-scanner \
-                          -Dsonar.projectKey=simple-cicd-app \
-                          -Dsonar.projectName=simple-cicd-app \
-                          -Dsonar.sources=app \
-                          -Dsonar.tests=tests \
-                          -Dsonar.python.version=3.10 \
-                          -Dsonar.sourceEncoding=UTF-8
-                    '''
+                script {
+                    // 🔑 THIS IS THE KEY FIX
+                    def scannerHome = tool(
+                        name: 'sonar-scanner',
+                        type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+                    )
+
+                    withSonarQubeEnv('sonarqube') {
+                        sh """
+                            export PATH=${scannerHome}/bin:\$PATH
+                            sonar-scanner \
+                              -Dsonar.projectKey=simple-cicd-app \
+                              -Dsonar.projectName=simple-cicd-app \
+                              -Dsonar.sources=app \
+                              -Dsonar.tests=tests \
+                              -Dsonar.python.version=3.10 \
+                              -Dsonar.sourceEncoding=UTF-8
+                        """
+                    }
                 }
             }
         }
